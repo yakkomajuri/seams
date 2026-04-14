@@ -1,16 +1,22 @@
+# node stack
 node_modules
 *.log
 .pnpm-store
 
-
+# local tools
 .gstack/
 .playwright-mcp/
 .interface-design/
 
-
+# build artifacts
 dist
 web-dist
 
+# seams
 .seamsrc
 
+# local docs editing
 docs/
+
+# macos
+.DS_Store
