@@ -1,0 +1,16 @@
+node_modules
+*.log
+.pnpm-store
+
+
+.gstack/
+.playwright-mcp/
+.interface-design/
+
+
+dist
+web-dist
+
+.seamsrc
+
+docs/
