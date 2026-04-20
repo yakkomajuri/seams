@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState, type DragEvent as ReactDragEvent } from 'react';
 import type { FileNode } from '../../../src/types';
 import { useFileStore } from '../stores/fileStore';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -10,6 +10,13 @@ import {
 import CreateFileDialog from './CreateFileDialog';
 import CreateDirectoryDialog from './CreateDirectoryDialog';
 import { Dialog, DialogContent, DialogClose } from './ui/dialog';
+import {
+  DRAG_MIME,
+  HOVER_OPEN_DELAY_MS,
+  baseName,
+  hasSeamsDrag,
+  joinPath,
+} from '../lib/drag';
 
 interface Props {
   nodes: FileNode[];
@@ -63,36 +70,107 @@ const treeItemClassName = 'relative w-full rounded px-2 py-1.5 text-left text-sm
 const treeLabelClassName = 'block truncate text-sm leading-5';
 const directoryTreeLabelClassName = `${treeLabelClassName} font-medium`;
 
+function moveSourceInto(source: string, targetDir: string): string {
+  return joinPath(targetDir, baseName(source));
+}
+
 function TreeNode({ node, active, onOpen, onDelete, onRename, hideDirs }: NodeProps) {
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const [newFileOpen, setNewFileOpen] = useState(false);
   const [newDirOpen, setNewDirOpen] = useState(false);
   const [pendingFileInDir, setPendingFileInDir] = useState<string | undefined>(undefined);
+  const [dragOver, setDragOver] = useState(false);
   const directoryOpen = useUiStore((s) => s.openDirectories.includes(node.path));
   const setDirectoryOpen = useUiStore((s) => s.setDirectoryOpen);
   const newlyCreatedDirs = useFileStore((s) => s.newlyCreatedDirs);
+  const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearOpenTimer = () => {
+    if (openTimerRef.current) {
+      clearTimeout(openTimerRef.current);
+      openTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => () => clearOpenTimer(), []);
 
   if (node.type === 'directory') {
     const children = hideDirs
       ? (node.children ?? []).filter((n) => n.type === 'file' || hasMarkdown(n) || newlyCreatedDirs.includes(n.path))
       : (node.children ?? []);
 
+    function handleSummaryDragEnter(event: ReactDragEvent<HTMLElement>) {
+      if (!hasSeamsDrag(event.dataTransfer)) return;
+      const related = event.relatedTarget as Node | null;
+      if (related && event.currentTarget.contains(related)) return;
+      setDragOver(true);
+      if (!directoryOpen && !openTimerRef.current) {
+        openTimerRef.current = setTimeout(() => {
+          setDirectoryOpen(node.path, true);
+          openTimerRef.current = null;
+        }, HOVER_OPEN_DELAY_MS);
+      }
+    }
+
+    function handleSummaryDragLeave(event: ReactDragEvent<HTMLElement>) {
+      const related = event.relatedTarget as Node | null;
+      if (related && event.currentTarget.contains(related)) return;
+      setDragOver(false);
+      clearOpenTimer();
+    }
+
+    function handleDirDragOver(event: ReactDragEvent<HTMLElement>) {
+      if (!hasSeamsDrag(event.dataTransfer)) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    }
+
+    function handleDirDrop(event: ReactDragEvent<HTMLElement>) {
+      if (!hasSeamsDrag(event.dataTransfer)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const source = event.dataTransfer.getData(DRAG_MIME);
+      setDragOver(false);
+      clearOpenTimer();
+      if (!source) return;
+      const target = moveSourceInto(source, node.path);
+      if (source === target) return;
+      onRename(source, target);
+    }
+
     return (
       <>
         <ContextMenu>
           <ContextMenuTrigger asChild>
-            <details open={directoryOpen}>
+            <details
+              open={directoryOpen}
+              onDragOver={handleDirDragOver}
+              onDrop={handleDirDrop}
+            >
               <summary
                 data-file-tree-node
                 className={`${treeItemClassName} flex cursor-pointer select-none items-center gap-1.5`}
-                style={{ color: 'var(--txt-2)' }}
+                style={{
+                  color: 'var(--txt-2)',
+                  background: dragOver ? 'var(--surface-3)' : undefined,
+                  outline: dragOver ? '1px dashed var(--accent)' : undefined,
+                  outlineOffset: dragOver ? '-1px' : undefined,
+                }}
                 onClick={(event) => {
                   event.preventDefault();
                   setDirectoryOpen(node.path, !directoryOpen);
                 }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--surface-2)'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                onDragEnter={handleSummaryDragEnter}
+                onDragLeave={handleSummaryDragLeave}
+                onMouseEnter={(e) => {
+                  if (dragOver) return;
+                  (e.currentTarget as HTMLElement).style.background = 'var(--surface-2)';
+                }}
+                onMouseLeave={(e) => {
+                  if (dragOver) return;
+                  (e.currentTarget as HTMLElement).style.background = 'transparent';
+                }}
               >
                 <svg className="chevron h-2 w-2 shrink-0 transition-transform" viewBox="0 0 6 10" fill="none">
                   <path d="M1 1l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -143,12 +221,19 @@ function TreeNode({ node, active, onOpen, onDelete, onRename, hideDirs }: NodePr
     setRenameOpen(false);
   }
 
+  function handleFileDragStart(event: ReactDragEvent<HTMLButtonElement>) {
+    event.dataTransfer.setData(DRAG_MIME, node.path);
+    event.dataTransfer.effectAllowed = 'move';
+  }
+
   return (
     <>
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <button
             data-file-tree-node
+            draggable
+            onDragStart={handleFileDragStart}
             className={`${treeItemClassName} flex items-center gap-1.5`}
             style={{
               color: isActive ? 'var(--txt)' : 'var(--txt-2)',
