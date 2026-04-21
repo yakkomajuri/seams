@@ -32,7 +32,13 @@ export default function Sidebar({ settingsOpen, collapsed, onToggle }: Props) {
     if (!hasSeamsDrag(event.dataTransfer)) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
-    if (!rootDragOver) setRootDragOver(true);
+    const target = event.target as HTMLElement | null;
+    const overDir = Boolean(target && target.closest('[data-file-tree-dir]'));
+    if (overDir) {
+      if (rootDragOver) setRootDragOver(false);
+    } else if (!rootDragOver) {
+      setRootDragOver(true);
+    }
   }
 
   function handleRootDragLeave(event: ReactDragEvent<HTMLDivElement>) {
@@ -54,6 +60,17 @@ export default function Sidebar({ settingsOpen, collapsed, onToggle }: Props) {
       if (activeFile === source) goToFiles(target);
     });
   }
+
+  useEffect(() => {
+    if (!rootDragOver) return;
+    const clear = () => setRootDragOver(false);
+    window.addEventListener('dragend', clear);
+    window.addEventListener('drop', clear);
+    return () => {
+      window.removeEventListener('dragend', clear);
+      window.removeEventListener('drop', clear);
+    };
+  }, [rootDragOver]);
 
   useEffect(() => {
     if (!rootMenuPoint) return;

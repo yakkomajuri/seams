@@ -95,6 +95,20 @@ function TreeNode({ node, active, onOpen, onDelete, onRename, hideDirs }: NodePr
 
   useEffect(() => () => clearOpenTimer(), []);
 
+  useEffect(() => {
+    if (!dragOver) return;
+    const clear = () => {
+      setDragOver(false);
+      clearOpenTimer();
+    };
+    window.addEventListener('dragend', clear);
+    window.addEventListener('drop', clear);
+    return () => {
+      window.removeEventListener('dragend', clear);
+      window.removeEventListener('drop', clear);
+    };
+  }, [dragOver]);
+
   if (node.type === 'directory') {
     const children = hideDirs
       ? (node.children ?? []).filter((n) => n.type === 'file' || hasMarkdown(n) || newlyCreatedDirs.includes(n.path))
@@ -144,6 +158,7 @@ function TreeNode({ node, active, onOpen, onDelete, onRename, hideDirs }: NodePr
         <ContextMenu>
           <ContextMenuTrigger asChild>
             <details
+              data-file-tree-dir
               open={directoryOpen}
               onDragOver={handleDirDragOver}
               onDrop={handleDirDrop}
