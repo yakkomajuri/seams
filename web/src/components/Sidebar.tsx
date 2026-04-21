@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useRef, useState, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import { useFileStore } from '../stores/fileStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
 import { goToFiles, goToSettings } from '../lib/router';
+import { DRAG_MIME, baseName, hasSeamsDrag, parentDir } from '../lib/drag';
 import FileTree from './FileTree';
 import CreateFileDialog from './CreateFileDialog';
 import CreateDirectoryDialog from './CreateDirectoryDialog';
@@ -25,6 +26,51 @@ export default function Sidebar({ settingsOpen, collapsed, onToggle }: Props) {
   const [newRootDirOpen, setNewRootDirOpen] = useState(false);
   const [pendingFileInDir, setPendingFileInDir] = useState<string | undefined>(undefined);
   const rootMenuRef = useRef<HTMLDivElement>(null);
+  const [rootDragOver, setRootDragOver] = useState(false);
+
+  function handleRootDragOver(event: ReactDragEvent<HTMLDivElement>) {
+    if (!hasSeamsDrag(event.dataTransfer)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    const target = event.target as HTMLElement | null;
+    const overDir = Boolean(target && target.closest('[data-file-tree-dir]'));
+    if (overDir) {
+      if (rootDragOver) setRootDragOver(false);
+    } else if (!rootDragOver) {
+      setRootDragOver(true);
+    }
+  }
+
+  function handleRootDragLeave(event: ReactDragEvent<HTMLDivElement>) {
+    const related = event.relatedTarget as Node | null;
+    if (related && event.currentTarget.contains(related)) return;
+    setRootDragOver(false);
+  }
+
+  function handleRootDrop(event: ReactDragEvent<HTMLDivElement>) {
+    if (!hasSeamsDrag(event.dataTransfer)) return;
+    event.preventDefault();
+    setRootDragOver(false);
+    const source = event.dataTransfer.getData(DRAG_MIME);
+    if (!source) return;
+    if (parentDir(source) === '') return;
+    const target = baseName(source);
+    if (source === target) return;
+    renameFile(source, target).then(() => {
+      if (activeFile === source) goToFiles(target);
+    });
+  }
+
+  useEffect(() => {
+    if (!rootDragOver) return;
+    const clear = () => setRootDragOver(false);
+    window.addEventListener('dragend', clear);
+    window.addEventListener('drop', clear);
+    return () => {
+      window.removeEventListener('dragend', clear);
+      window.removeEventListener('drop', clear);
+    };
+  }, [rootDragOver]);
 
   useEffect(() => {
     if (!rootMenuPoint) return;
@@ -133,7 +179,18 @@ export default function Sidebar({ settingsOpen, collapsed, onToggle }: Props) {
       </div>
 
       {/* File tree */}
-      <div className="min-h-0 flex-1 overflow-auto px-2 py-2" onContextMenu={openRootContextMenu}>
+      <div
+        className="min-h-0 flex-1 overflow-auto px-2 py-2"
+        onContextMenu={openRootContextMenu}
+        onDragOver={handleRootDragOver}
+        onDragLeave={handleRootDragLeave}
+        onDrop={handleRootDrop}
+        style={{
+          background: rootDragOver ? 'var(--surface-2)' : undefined,
+          outline: rootDragOver ? '1px dashed var(--accent)' : undefined,
+          outlineOffset: rootDragOver ? '-4px' : undefined,
+        }}
+      >
         <div className="flex min-h-full flex-col">
           <FileTree
             nodes={files}
