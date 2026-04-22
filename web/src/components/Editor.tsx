@@ -7,8 +7,6 @@ import {
   RemoveBlockItem,
   SideMenu,
   SideMenuController,
-  TableColumnHeaderItem,
-  TableRowHeaderItem,
   SuggestionMenuController,
   LinkToolbarController,
   FormattingToolbarController,
@@ -75,8 +73,6 @@ function SafeDragHandleMenu() {
   return (
     <DragHandleMenu>
       <RemoveBlockItem>{dict.drag_handle.delete_menuitem}</RemoveBlockItem>
-      <TableRowHeaderItem>{dict.drag_handle.header_row_menuitem}</TableRowHeaderItem>
-      <TableColumnHeaderItem>{dict.drag_handle.header_column_menuitem}</TableColumnHeaderItem>
     </DragHandleMenu>
   );
 }

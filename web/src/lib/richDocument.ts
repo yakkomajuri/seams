@@ -259,6 +259,10 @@ function normalizeImportedBlock(block: SeamsPartialBlock): SeamsPartialBlock {
     children: normalizedChildren as any,
   };
 
+  if (block.type === 'table') {
+    return stripTableHeaders(normalizedBlock);
+  }
+
   if (block.type !== 'quote' || hasInlineContent(block.content)) {
     return normalizedBlock;
   }
@@ -272,6 +276,26 @@ function normalizeImportedBlock(block: SeamsPartialBlock): SeamsPartialBlock {
     ...normalizedBlock,
     content: firstChild.content,
     children: [...((firstChild.children ?? []) as SeamsPartialBlock[]), ...normalizedChildren.slice(1)] as any,
+  } as SeamsPartialBlock;
+}
+
+// Markdown tables always declare the first row as a header (the `| --- |`
+// separator is required by GFM). BlockNote then treats that row as `<th>`
+// cells, which render as bold, visually-distinct header cells. We strip the
+// header hints so every row renders as a plain editable cell — the user can
+// still type into any cell, and the GFM separator is re-emitted on save.
+function stripTableHeaders(block: SeamsPartialBlock): SeamsPartialBlock {
+  const content = (block as any).content;
+  if (!content || typeof content !== 'object' || content.type !== 'tableContent') {
+    return block;
+  }
+  if (content.headerRows === undefined && content.headerCols === undefined) {
+    return block;
+  }
+  const { headerRows: _h, headerCols: _c, ...rest } = content;
+  return {
+    ...block,
+    content: rest,
   } as SeamsPartialBlock;
 }
 

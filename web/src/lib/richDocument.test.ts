@@ -123,6 +123,21 @@ function createFakeEditor() {
         }];
       }
 
+      if (markdown.startsWith('| H1 ')) {
+        return [{
+          type: 'table',
+          content: {
+            type: 'tableContent',
+            headerRows: 1,
+            rows: [
+              { cells: [[{ type: 'text', text: 'H1', styles: {} }], [{ type: 'text', text: 'H2', styles: {} }]] },
+              { cells: [[{ type: 'text', text: 'a', styles: {} }], [{ type: 'text', text: 'b', styles: {} }]] },
+            ],
+          },
+          children: [],
+        }];
+      }
+
       return [];
     },
     async blocksToMarkdownLossy(blocks: Array<{ type: string; content?: unknown }>) {
@@ -268,6 +283,19 @@ test('importRichDocument parses details blocks into details children', async () 
       children: [],
     }],
   });
+});
+
+test('importRichDocument strips table header rows and columns so every cell is editable', async () => {
+  const editor = createFakeEditor();
+  const blocks = await importRichDocument(editor, '| H1 | H2 |\n| -- | -- |\n| a  | b  |');
+
+  assert.equal(blocks.length, 1);
+  assert.equal(blocks[0].type, 'table');
+  const tableContent = (blocks[0] as any).content;
+  assert.equal(tableContent.type, 'tableContent');
+  assert.equal(tableContent.headerRows, undefined);
+  assert.equal(tableContent.headerCols, undefined);
+  assert.equal(tableContent.rows.length, 2);
 });
 
 test('exportRichDocument serializes details blocks with open state and children', async () => {
