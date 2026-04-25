@@ -24,5 +24,5 @@ export function buildAssetUrl(assetsDir: string, relativePath: string): string {
   if (servesAssetsFromRoot(assetsDir)) {
     return `/${normalizedPath}`;
   }
-  return `/assets/${normalizedPath}`;
+  return `/${normalizeAssetsDir(assetsDir)}/${normalizedPath}`;
 }

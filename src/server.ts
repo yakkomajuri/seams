@@ -12,7 +12,7 @@ import { registerFileRoutes } from './routes/files.js';
 import { registerSearchRoutes } from './routes/search.js';
 import { registerSettingsRoutes } from './routes/settings.js';
 import { registerUploadRoutes } from './routes/upload.js';
-import { resolveAssetsRoot, servesAssetsFromRoot } from './services/assets.js';
+import { normalizeAssetsDir, resolveAssetsRoot, servesAssetsFromRoot } from './services/assets.js';
 import { FileWatcher } from './services/watcher.js';
 
 export interface StartServerOptions {
@@ -50,7 +50,7 @@ export async function startServer({ rootDir, config, dev }: StartServerOptions):
 
   await app.register(fastifyStatic, {
     root: assetsRoot,
-    prefix: '/assets/',
+    prefix: `/${normalizeAssetsDir(config.assets)}/`,
     decorateReply: false,
   });
 

@@ -18,7 +18,9 @@ test('servesAssetsFromRoot detects public directories', () => {
   assert.equal(servesAssetsFromRoot('./assets'), false);
 });
 
-test('buildAssetUrl keeps public assets at root and other assets under /assets', () => {
+test('buildAssetUrl keeps public assets at root and reflects the configured assets dir otherwise', () => {
   assert.equal(buildAssetUrl('./public', 'images/hero.png'), '/images/hero.png');
   assert.equal(buildAssetUrl('./assets', 'images/hero.png'), '/assets/images/hero.png');
+  assert.equal(buildAssetUrl('./static', 'images/hero.png'), '/static/images/hero.png');
+  assert.equal(buildAssetUrl('./nested/media', 'hero.png'), '/nested/media/hero.png');
 });
