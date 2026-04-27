@@ -7,7 +7,7 @@ export const DEFAULT_CONFIG: SeamsConfig = {
   defaultPort: 4444,
   assets: './assets',
   autoSave: true,
-  autoSaveDelay: 1000,
+  autoSaveDelay: 100,
   hideDirsWithoutMd: true,
   theme: 'neutral-dark',
   ignoreDirs: [],

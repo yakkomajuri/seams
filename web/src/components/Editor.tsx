@@ -292,7 +292,7 @@ export default function Editor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFile, editor]); // markdown intentionally omitted — only reload on file change, not on save
 
-  const debounceDelay = settings?.autoSaveDelay ?? 1000;
+  const debounceDelay = settings?.autoSaveDelay ?? 100;
   const autoSaveEnabled = settings?.autoSave ?? true;
   const autoSaveEnabledRef = useRef(autoSaveEnabled);
   autoSaveEnabledRef.current = autoSaveEnabled;

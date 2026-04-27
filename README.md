@@ -105,7 +105,7 @@ Here's what a `.seamsrc` config file looks like:
   "defaultPort": 4444,
   "assets": "./assets",
   "autoSave": true,
-  "autoSaveDelay": 250,
+  "autoSaveDelay": 100,
   "hideDirsWithoutMd": true,
   "theme": "neutral-dark",
   "ignoreDirs": [
@@ -126,7 +126,7 @@ Here's what a `.seamsrc` config file looks like:
 | `defaultPort`       | `number`                            | `4444`             | Port for the local server. Increments automatically if the port is already in use.      |
 | `assets`            | `string`                            | `"./assets"`       | Relative path to the directory where uploaded images and files are stored.              |
 | `autoSave`          | `boolean`                           | `true`             | Automatically save changes to disk after a short delay.                                 |
-| `autoSaveDelay`     | `number` (ms)                       | `1000`             | Milliseconds to wait after the last edit before auto-saving. Requires `autoSave: true`. |
+| `autoSaveDelay`     | `number` (ms)                       | `100`              | Milliseconds to wait after the last edit before auto-saving. Requires `autoSave: true`. |
 | `hideDirsWithoutMd` | `boolean`                           | `true`             | Hide directories with no Markdown files from the sidebar file tree.                     |
 | `theme`             | `"neutral-dark" \| "neutral-light"` | `"neutral-dark"`   | Editor UI color theme.                                                                  |
 | `ignoreDirs`        | `string[]`                          | `["node_modules"]` | Directories to exclude from the file tree, search, and file watching.                   |
